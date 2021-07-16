@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp2.1</TargetFrameworks>
+    <RootNamespace>SignalWire</RootNamespace>
+    <NoWarn>$(NoWarn);CS0618;</NoWarn>
+
+    <PackageId>SignalWire-DotNet</PackageId>
+    <Title>SignalWire</Title>
+    <Version>3.0.0</Version>
+    <Authors>SignalWire Team</Authors>
+    <Company>SignalWire Inc</Company>
+    <Copyright>Copyright © SignalWire Inc</Copyright>
+    <Description>SignalWire development kit for operating with http://signalwire.com services.</Description>
+    <PackageTags>REST;websocket;json;jsonrpc;SMS;voice;telephony;phone;video;voip;realtime;sdk;api</PackageTags>
+    <PackageProjectUrl>http://github.com/signalwire/signalwire-dotnet</PackageProjectUrl>
+    <PackageLicenseUrl>http://github.com/signalwire/signalwire-dotnet/LICENSE</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/signalwire/signalwire-dotnet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.1.2" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="5.1.2" />
+    <PackageReference Include="Microsoft.IdentityModel.Logging" Version="1.1.2" />
+    <PackageReference Include="System.Collections.Specialized" Version="4.3.0" />
+  </ItemGroup>
+</Project>
