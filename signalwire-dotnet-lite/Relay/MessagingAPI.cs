@@ -129,14 +129,22 @@ namespace SignalWire.Relay
             OnMessageReceived?.Invoke(this, message, eventParams, receiveParams);
         }
 
-        private void OnEvent(Client client, EventParams eventParams)
+        private void OnEvent(Client client, Request request)
         {
-            Log(LogLevel.Debug, string.Format("MessageAPI OnEvent: {0}", eventParams.Type));
+            EventParams eventParams = null;
+            try { eventParams = request.ParametersAs<EventParams>(); }
+            catch (Exception exc)
+            {
+                Log(LogLevel.Warning, exc, "Failed to parse EventParams");
+                return;
+            }
 
-            if (eventParams.Type != "queuing.relay.messaging") return;
+            Log(LogLevel.Debug, string.Format("MessageAPI OnEvent: {0}", eventParams.EventType));
+
+            if (!eventParams.EventType.StartsWith("messaging.")) return;
 
             MessagingEventParams messagingEventParams = null;
-            try { messagingEventParams = eventParams.ParametersAs<MessagingEventParams>(); }
+            try { messagingEventParams = request.ParametersAs<MessagingEventParams>(); }
             catch (Exception exc)
             {
                 Log(LogLevel.Warning, exc, "Failed to parse MessagingEventParams");
@@ -152,10 +160,10 @@ namespace SignalWire.Relay
             switch (messagingEventParams.EventType.ToLower())
             {
                 case "messaging.state":
-                    OnMessagingEvent_MessageState(client, eventParams, messagingEventParams);
+                    OnMessagingEvent_MessageState(client, messagingEventParams);
                     break;
                 case "messaging.receive":
-                    OnMessagingEvent_MessageReceive(client, eventParams, messagingEventParams);
+                    OnMessagingEvent_MessageReceive(client, messagingEventParams);
                     break;
                 default:
                     Log(LogLevel.Debug, string.Format("Received unknown messaging EventType: {0}", messagingEventParams.EventType));
@@ -163,7 +171,7 @@ namespace SignalWire.Relay
             }
         }
 
-        private void OnMessagingEvent_MessageState(Client client, EventParams broadcastParams, MessagingEventParams messagingEventParams)
+        private void OnMessagingEvent_MessageState(Client client, MessagingEventParams messagingEventParams)
         {
             MessagingEventParams.StateParams stateParams = null;
             try { stateParams = messagingEventParams.ParametersAs<MessagingEventParams.StateParams>(); }
@@ -176,7 +184,7 @@ namespace SignalWire.Relay
             MessageStateChangeHandler(messagingEventParams, stateParams);
         }
 
-        private void OnMessagingEvent_MessageReceive(Client client, EventParams broadcastParams, MessagingEventParams messagingEventParams)
+        private void OnMessagingEvent_MessageReceive(Client client, MessagingEventParams messagingEventParams)
         {
             MessagingEventParams.ReceiveParams receiveParams = null;
             try { receiveParams = messagingEventParams.ParametersAs<MessagingEventParams.ReceiveParams>(); }

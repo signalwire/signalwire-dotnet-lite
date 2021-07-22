@@ -71,19 +71,27 @@ namespace SignalWire.Relay
             mCalls.TryRemove(callid, out _);
         }
 
-        private void OnEvent(Client client, EventParams eventParams)
+        private void OnEvent(Client client, Request request)
         {
-            if (eventParams.Type != "queuing.relay.events" && eventParams.Type != "relay") return;
+            EventParams eventParams = null;
+            try { eventParams = request.ParametersAs<EventParams>(); }
+            catch (Exception exc)
+            {
+                Log(LogLevel.Warning, exc, "Failed to parse EventParams");
+                return;
+            }
 
-            Log(LogLevel.Debug, "CallingAPI OnNotification");
+            if (!eventParams.EventType.StartsWith("calling.")) return;
 
             CallingEventParams callingEventParams = null;
-            try { callingEventParams = eventParams.ParametersAs<CallingEventParams>(); }
+            try { callingEventParams = request.ParametersAs<CallingEventParams>(); }
             catch (Exception exc)
             {
                 Log(LogLevel.Warning, exc, "Failed to parse CallingEventParams");
                 return;
             }
+
+            Log(LogLevel.Debug, "CallingAPI OnNotification");
 
             if (string.IsNullOrWhiteSpace(callingEventParams.EventType))
             {
@@ -94,40 +102,40 @@ namespace SignalWire.Relay
             switch (callingEventParams.EventType.ToLower())
             {
                 case "calling.call.state":
-                    OnCallingEvent_State(client, eventParams, callingEventParams);
+                    OnCallingEvent_State(client, callingEventParams);
                     break;
                 case "calling.call.receive":
-                    OnCallingEvent_Receive(client, eventParams, callingEventParams);
+                    OnCallingEvent_Receive(client, callingEventParams);
                     break;
                 case "calling.call.connect":
-                    OnCallingEvent_Connect(client, eventParams, callingEventParams);
+                    OnCallingEvent_Connect(client, callingEventParams);
                     break;
                 case "calling.call.play":
-                    OnCallingEvent_Play(client, eventParams, callingEventParams);
+                    OnCallingEvent_Play(client, callingEventParams);
                     break;
                 case "calling.call.collect":
-                    OnCallingEvent_Collect(client, eventParams, callingEventParams);
+                    OnCallingEvent_Collect(client, callingEventParams);
                     break;
                 case "calling.call.record":
-                    OnCallingEvent_Record(client, eventParams, callingEventParams);
+                    OnCallingEvent_Record(client, callingEventParams);
                     break;
                 case "calling.call.tap":
-                    OnCallingEvent_Tap(client, eventParams, callingEventParams);
+                    OnCallingEvent_Tap(client, callingEventParams);
                     break;
                 case "calling.call.detect":
-                    OnCallingEvent_Detect(client, eventParams, callingEventParams);
+                    OnCallingEvent_Detect(client, callingEventParams);
                     break;
                 case "calling.call.fax":
-                    OnCallingEvent_Fax(client, eventParams, callingEventParams);
+                    OnCallingEvent_Fax(client, callingEventParams);
                     break;
                 case "calling.call.send_digits":
-                    OnCallingEvent_SendDigits(client, eventParams, callingEventParams);
+                    OnCallingEvent_SendDigits(client, callingEventParams);
                     break;
                 default: break;
             }
         }
 
-        private void OnCallingEvent_State(Client client, EventParams broadcastParams, CallingEventParams callEventParams)
+        private void OnCallingEvent_State(Client client, CallingEventParams callEventParams)
         {
             CallingEventParams.StateParams stateParams = null;
             try { stateParams = callEventParams.ParametersAs<CallingEventParams.StateParams>(); }
@@ -176,7 +184,29 @@ namespace SignalWire.Relay
                         }));
                         break;
                     }
-                // @TODO: sip and webrtc
+                case CallDevice.DeviceType.sip:
+                    {
+                        CallDevice.SipParams sipParams = null;
+                        try { sipParams = stateParams.Device.ParametersAs<CallDevice.SipParams>(); }
+                        catch (Exception exc)
+                        {
+                            Log(LogLevel.Warning, exc, "Failed to parse SipParams");
+                            return;
+                        }
+
+                        // If the call already exists under the real call id simply obtain the call, however if the call was found under
+                        // a temporary call id then readd it here under the real call id, otherwise create a new call
+                        call = mCalls.GetOrAdd(stateParams.CallID, k => call ?? (tmp = new SipCall(this, stateParams.NodeID, stateParams.CallID)
+                        {
+                            To = sipParams.To,
+                            From = sipParams.From,
+                            // Capture the state, it may not always be created the first time we see the call
+                            State = stateParams.CallState,
+                            // TODO: Capture headers? should they be in stateParams?
+                        }));
+                        break;
+                    }
+                // @TODO: webrtc
                 default:
                     Log(LogLevel.Warning, string.Format("Unknown device type: {0}", stateParams.Device.Type));
                     return;
@@ -187,7 +217,7 @@ namespace SignalWire.Relay
             call.StateChangeHandler(callEventParams, stateParams);
         }
 
-        private void OnCallingEvent_Receive(Client client, EventParams eventParams, CallingEventParams callEventParams)
+        private void OnCallingEvent_Receive(Client client, CallingEventParams callEventParams)
         {
             CallingEventParams.ReceiveParams receiveParams = null;
             try { receiveParams = callEventParams.ParametersAs<CallingEventParams.ReceiveParams>(); }
@@ -260,7 +290,7 @@ namespace SignalWire.Relay
             call.ReceiveHandler(callEventParams, receiveParams);
         }
 
-        private void OnCallingEvent_Connect(Client client, EventParams broadcastParams, CallingEventParams callEventParams)
+        private void OnCallingEvent_Connect(Client client, CallingEventParams callEventParams)
         {
             CallingEventParams.ConnectParams connectParams = null;
             try { connectParams = callEventParams.ParametersAs<CallingEventParams.ConnectParams>(); }
@@ -278,7 +308,7 @@ namespace SignalWire.Relay
             call.ConnectHandler(callEventParams, connectParams);
         }
 
-        private void OnCallingEvent_Play(Client client, EventParams broadcastParams, CallingEventParams callEventParams)
+        private void OnCallingEvent_Play(Client client, CallingEventParams callEventParams)
         {
             CallingEventParams.PlayParams playParams = null;
             try { playParams = callEventParams.ParametersAs<CallingEventParams.PlayParams>(); }
@@ -296,7 +326,7 @@ namespace SignalWire.Relay
             call.PlayHandler(callEventParams, playParams);
         }
 
-        private void OnCallingEvent_Collect(Client client, EventParams broadcastParams, CallingEventParams callEventParams)
+        private void OnCallingEvent_Collect(Client client, CallingEventParams callEventParams)
         {
             CallingEventParams.CollectParams collectParams = null;
             try { collectParams = callEventParams.ParametersAs<CallingEventParams.CollectParams>(); }
@@ -314,7 +344,7 @@ namespace SignalWire.Relay
             call.CollectHandler(callEventParams, collectParams);
         }
 
-        private void OnCallingEvent_Record(Client client, EventParams broadcastParams, CallingEventParams callEventParams)
+        private void OnCallingEvent_Record(Client client, CallingEventParams callEventParams)
         {
             CallingEventParams.RecordParams recordParams = null;
             try { recordParams = callEventParams.ParametersAs<CallingEventParams.RecordParams>(); }
@@ -332,7 +362,7 @@ namespace SignalWire.Relay
             call.RecordHandler(callEventParams, recordParams);
         }
 
-        private void OnCallingEvent_Tap(Client client, EventParams broadcastParams, CallingEventParams callEventParams)
+        private void OnCallingEvent_Tap(Client client, CallingEventParams callEventParams)
         {
             CallingEventParams.TapParams tapParams = null;
             try { tapParams = callEventParams.ParametersAs<CallingEventParams.TapParams>(); }
@@ -350,7 +380,7 @@ namespace SignalWire.Relay
             call.TapHandler(callEventParams, tapParams);
         }
 
-        private void OnCallingEvent_Detect(Client client, EventParams broadcastParams, CallingEventParams callEventParams)
+        private void OnCallingEvent_Detect(Client client, CallingEventParams callEventParams)
         {
             CallingEventParams.DetectParams detectParams = null;
             try { detectParams = callEventParams.ParametersAs<CallingEventParams.DetectParams>(); }
@@ -368,7 +398,7 @@ namespace SignalWire.Relay
             call.DetectHandler(callEventParams, detectParams);
         }
 
-        private void OnCallingEvent_Fax(Client client, EventParams broadcastParams, CallingEventParams callEventParams)
+        private void OnCallingEvent_Fax(Client client, CallingEventParams callEventParams)
         {
             CallingEventParams.FaxParams faxParams = null;
             try { faxParams = callEventParams.ParametersAs<CallingEventParams.FaxParams>(); }
@@ -386,7 +416,7 @@ namespace SignalWire.Relay
             call.FaxHandler(callEventParams, faxParams);
         }
 
-        private void OnCallingEvent_SendDigits(Client client, EventParams broadcastParams, CallingEventParams callEventParams)
+        private void OnCallingEvent_SendDigits(Client client, CallingEventParams callEventParams)
         {
             CallingEventParams.SendDigitsParams sendDigitsParams = null;
             try { sendDigitsParams = callEventParams.ParametersAs<CallingEventParams.SendDigitsParams>(); }
@@ -521,7 +551,7 @@ namespace SignalWire.Relay
 
         public Task<LL_SendDigitsResult> LL_SendDigitsAsync(LL_SendDigitsParams parameters)
         {
-            return mAPI.ExecuteAsync<LL_SendDigitsParams, LL_SendDigitsResult>("call.send_digits", parameters);
+            return mAPI.ExecuteAsync<LL_SendDigitsParams, LL_SendDigitsResult>("calling.send_digits", parameters);
         }
 
         internal void Log(LogLevel level, string message,

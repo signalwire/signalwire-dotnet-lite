@@ -16,7 +16,7 @@ namespace SignalWire.Relay
         private readonly ILogger mLogger = null;
         private SignalwireAPI mAPI = null;
 
-        internal TestingAPI(SignalwireAPI api)
+        public TestingAPI(SignalwireAPI api)
         {
             mLogger = SignalWireLogging.CreateLogger<Client>();
             mAPI = api;

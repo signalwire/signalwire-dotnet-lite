@@ -12,5 +12,6 @@ namespace SignalWire.Relay.Calling
         noAnswer,
         decline,
         error,
+        maxDuration,
     }
 }

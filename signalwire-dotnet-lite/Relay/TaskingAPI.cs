@@ -34,21 +34,29 @@ namespace SignalWire.Relay
         {
         }
 
-        private void OnEvent(Client client, EventParams eventParams)
+        private void OnEvent(Client client, Request request)
         {
-            if (eventParams.Type != "queuing.relay.tasks") return;
-
-            Log(LogLevel.Debug, "TaskingAPI OnNotification");
-
-            RelayTask taskingEventParams = null;
-            try { taskingEventParams = eventParams.ParametersAs<RelayTask>(); }
+            EventParams taskingEventParams = null;
+            try { taskingEventParams = request.ParametersAs<EventParams>(); }
             catch (Exception exc)
             {
                 Log(LogLevel.Warning, exc, "Failed to parse TaskingEventParams");
                 return;
             }
 
-            OnTaskReceived?.Invoke(this, taskingEventParams);
+            if (taskingEventParams.EventType != "queuing.relay.tasks") return;
+
+            RelayTask relayTask = null;
+            try { relayTask = taskingEventParams.ParametersAs<RelayTask>(); }
+            catch (Exception exc)
+            {
+                Log(LogLevel.Warning, exc, "Failed to parse RelayTask");
+                return;
+            }
+
+            Log(LogLevel.Debug, "TaskingAPI OnNotification");
+
+            OnTaskReceived?.Invoke(this, relayTask);
         }
 
         public bool Deliver(string context, JObject message)

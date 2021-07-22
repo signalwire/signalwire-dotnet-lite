@@ -28,6 +28,8 @@ namespace SignalWire.Relay
             public TimeSpan ConnectDelay { get; set; } = TimeSpan.FromSeconds(5);
             public TimeSpan ConnectTimeout { get; set; } = TimeSpan.FromSeconds(5);
             public TimeSpan CloseTimeout { get; set; } = TimeSpan.FromSeconds(5);
+            public string Protocol { get; set; }
+            public string[] Contexts { get; set; }
         }
 
         public enum SessionState
@@ -311,6 +313,8 @@ namespace SignalWire.Relay
             Request request = Request.Create("signalwire.connect", out ConnectParams param, OnSignalwireConnectResponse);
             param.Authentication = JsonConvert.DeserializeObject(mOptions.Authentication);
             param.Agent = agent;
+            param.Protocol = mOptions.Protocol;
+            if (mOptions.Contexts != null) param.Contexts = new List<string>(mOptions.Contexts);
             Send(request, true);
         }
 
@@ -683,7 +687,7 @@ namespace SignalWire.Relay
                 return;
             }
 
-            Log(LogLevel.Information, "Event {0} received", eventParams.Type);
+            Log(LogLevel.Information, string.Format("Event {0} received", eventParams.EventType));
 
             OnEvent(session, request, eventParams);
         }

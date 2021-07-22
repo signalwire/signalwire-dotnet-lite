@@ -8,10 +8,9 @@ namespace SignalWire.Relay.Signalwire
 {
     public sealed class EventParams
     {
-        [JsonProperty("protocol", Required = Required.Always)]
-        public string Protocol { get; set; }
-        [JsonProperty("type", Required = Required.Always)]
-        public string Type { get; set; }
+        [JsonProperty("event_type", Required = Required.Always)]
+        public string EventType { get; set; }
+
         [JsonProperty("params", NullValueHandling = NullValueHandling.Ignore)]
         public object Parameters { get; set; }
 

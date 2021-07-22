@@ -51,13 +51,13 @@ namespace SignalWire.Relay
             if (string.IsNullOrWhiteSpace(Project)) throw new ArgumentNullException("Project");
             if (string.IsNullOrWhiteSpace(Token)) throw new ArgumentNullException("Token");
 
-            using (mClient = new Client(Project, Token, host: Host, jwt: JWT)) //, uncertifiedConnectParams: new Blade.Messages.UncertifiedConnectParams { Contexts = Contexts }))
+            using (mClient = new Client(Project, Token, host: Host, contexts: Contexts?.ToArray(), jwt: JWT)) //, uncertifiedConnectParams: new Blade.Messages.UncertifiedConnectParams { Contexts = Contexts }))
             {
                 mClient.OnReady += c => Task.Run(() => Ready());
-                mClient.CallingAPI.OnCallReceived += (a, c, p) => Task.Run(() => OnIncomingCall(c));
-                mClient.MessagingAPI.OnMessageReceived += (a, m, e, p) => Task.Run(() => OnIncomingMessage(m));
-                mClient.MessagingAPI.OnMessageStateChange += (a, m, e, p) => Task.Run(() => OnMessageStateChange(m));
-                mClient.TaskingAPI.OnTaskReceived += (c, p) => Task.Run(() => OnTask(p));
+                mClient.Calling.OnCallReceived += (a, c, p) => Task.Run(() => OnIncomingCall(c));
+                mClient.Messaging.OnMessageReceived += (a, m, e, p) => Task.Run(() => OnIncomingMessage(m));
+                mClient.Messaging.OnMessageStateChange += (a, m, e, p) => Task.Run(() => OnMessageStateChange(m));
+                mClient.Tasking.OnTaskReceived += (c, p) => Task.Run(() => OnTask(p));
 
                 mClient.Connect();
 

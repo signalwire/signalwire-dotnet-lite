@@ -39,6 +39,8 @@ namespace SignalWire.Relay
 
         private bool mDisposed = false;
 
+        private Session.SessionOptions mOptions = null;
+
         private string mHost = null;
         private string mProjectID = null;
         private string mToken = null;
@@ -53,6 +55,7 @@ namespace SignalWire.Relay
             string token,
             string host = null,
             string agent = null,
+            string[] contexts = null,
             bool jwt = false,
             TimeSpan? connectDelay = null,
             TimeSpan? connectTimeout = null,
@@ -70,17 +73,18 @@ namespace SignalWire.Relay
             if (!jwt) authentication = CreateAuthentication(project, token);
             else authentication = CreateJWTAuthentication(project, token);
 
-            Session.SessionOptions options = new Session.SessionOptions()
+            mOptions = new Session.SessionOptions()
             {
                 Bootstrap = new Uri("wss://" + host),
                 Authentication = authentication,
                 Agent = agent,
+                Contexts = contexts,
             };
-            if (connectDelay.HasValue) options.ConnectDelay = connectDelay.Value;
-            if (connectTimeout.HasValue) options.ConnectTimeout = connectTimeout.Value;
-            if (closeTimeout.HasValue) options.CloseTimeout = closeTimeout.Value;
+            if (connectDelay.HasValue) mOptions.ConnectDelay = connectDelay.Value;
+            if (connectTimeout.HasValue) mOptions.ConnectTimeout = connectTimeout.Value;
+            if (closeTimeout.HasValue) mOptions.CloseTimeout = closeTimeout.Value;
 
-            Session = new Session(options);
+            Session = new Session(mOptions);
 
             mSignalwireAPI = new SignalwireAPI(this);
             mCallingAPI = new CallingAPI(mSignalwireAPI);
@@ -89,8 +93,8 @@ namespace SignalWire.Relay
 
             Session.OnReady += s =>
             {
-                mSignalwireAPI.Protocol = s.Protocol;
-                s.OnEvent += (s2, r, p) => mSignalwireAPI.ExecuteEventCallback(p);
+                mSignalwireAPI.Protocol = mOptions.Protocol = s.Protocol;
+                s.OnEvent += (s2, r, p) => mSignalwireAPI.ExecuteEventCallback(r);
                 OnReady?.Invoke(this);
             };
             Session.OnDisconnected += s => OnDisconnected?.Invoke(this);
@@ -102,13 +106,13 @@ namespace SignalWire.Relay
         public string ProjectID { get { return mProjectID; } }
         public string Token { get { return mToken; } }
 
-        public SignalwireAPI SignalwireAPI {  get { return mSignalwireAPI; } }
+        public SignalwireAPI Signalwire {  get { return mSignalwireAPI; } }
 
-        public CallingAPI CallingAPI { get { return mCallingAPI; } }
+        public CallingAPI Calling { get { return mCallingAPI; } }
 
-        public TaskingAPI TaskingAPI {  get { return mTaskingAPI; } }
+        public TaskingAPI Tasking {  get { return mTaskingAPI; } }
 
-        public MessagingAPI MessagingAPI { get { return mMessagingAPI; } }
+        public MessagingAPI Messaging { get { return mMessagingAPI; } }
 
         public object UserData { get; set; }
 
@@ -143,6 +147,7 @@ namespace SignalWire.Relay
 
         public void Reset()
         {
+            mOptions.Protocol = null;
             mSignalwireAPI.Reset();
             mCallingAPI.Reset();
             mTaskingAPI.Reset();

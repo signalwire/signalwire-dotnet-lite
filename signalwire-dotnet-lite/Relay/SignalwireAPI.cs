@@ -14,7 +14,7 @@ namespace SignalWire.Relay
 {
     public class SignalwireAPI
     {
-        public delegate void EventCallback(Client client, EventParams eventParams);
+        public delegate void EventCallback(Client client, Request request);
 
         private readonly ILogger mLogger = null;
 
@@ -33,7 +33,7 @@ namespace SignalWire.Relay
 
         public event EventCallback OnEvent;
 
-        internal void ExecuteEventCallback(EventParams eventParams) { OnEvent?.Invoke(mClient, eventParams); }
+        internal void ExecuteEventCallback(Request request) { OnEvent?.Invoke(mClient, request); }
 
         internal void Reset()
         {

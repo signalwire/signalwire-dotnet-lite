@@ -148,6 +148,8 @@ namespace SignalWire.Relay.Calling
         public bool Busy { get { return mBusy; } internal set { mBusy = value; } }
         public bool Failed { get; internal set; }
 
+        public bool MaxDurationExceeded { get; internal set; }
+
         public object UserData { get; set; }
 
         public abstract string Type { get; }
@@ -224,6 +226,7 @@ namespace SignalWire.Relay.Calling
                     }
                     if (stateParams.EndReason == DisconnectReason.busy) mBusy = true;
                     else if (stateParams.EndReason == DisconnectReason.error) Failed = true;
+                    else if (stateParams.EndReason == DisconnectReason.maxDuration) MaxDurationExceeded = true;
 
                     OnEnded?.Invoke(mAPI, this, eventParams, stateParams);
                     break;
