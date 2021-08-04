@@ -9,8 +9,8 @@ echo Substituting...
 grep -Rl "\.twilio\.com" laml/src/* | xargs sed -i 's/.twilio.com/.signalwire.com/g'
 grep -Rl "\.twilio\.com" laml/test/* | xargs sed -i 's/.twilio.com/.signalwire.com/g'
 echo Copying...
-rm -rf signalwire-dotnet/laml
-cp -R laml/src/Twilio signalwire-dotnet/laml
-rm -rf signalwire-dotnet/laml/Properties signalwire-dotnet/laml/Twilio.csproj
+rm -rf signalwire-dotnet-lite/laml
+cp -R laml/src/Twilio signalwire-dotnet-lite/laml
+rm -rf signalwire-dotnet-lite/laml/Properties signalwire-dotnet-lite/laml/Twilio.csproj
 rm -rf laml
 echo Done!
