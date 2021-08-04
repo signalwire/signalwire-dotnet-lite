@@ -608,7 +608,7 @@ namespace SignalWire.Relay
 
                 Request request = Request.Parse(obj);
                 Log(LogLevel.Debug, string.Format("Received Request Frame: {0} for {1}", request.ID, request.Method));
-                Log(LogLevel.Debug, obj.ToString(Formatting.None));
+                Log(LogLevel.Debug, obj.ToString(Formatting.Indented));
 
                 switch (request.Method.ToLower())
                 {
@@ -630,7 +630,7 @@ namespace SignalWire.Relay
             {
                 Response response = Response.Parse(obj);
                 Log(LogLevel.Debug, string.Format("Received Response Frame: {0}", response.ID));
-                Log(LogLevel.Debug, obj.ToString(Formatting.None));
+                Log(LogLevel.Debug, obj.ToString(Formatting.Indented));
 
                 if (!mRequests.TryRemove(response.ID, out Request request))
                 {
