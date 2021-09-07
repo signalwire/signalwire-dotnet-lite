@@ -758,6 +758,14 @@ namespace SignalWire.Relay.Calling
                 LL_DisconnectResult resultLLDisconnect = await taskLLDisconnect;
                 if (resultLLDisconnect.Code == "200")
                 {
+                    // Since there are no disconnect events, this ends the successful checks
+                    if (Peer != null)
+                    {
+                        Peer.Peer = null;
+                        Peer = null;
+                    }
+                    resultDisconnect.Successful = true;
+
                     mLogger.LogDebug("Disconnect for call {0} {1}", ID, resultDisconnect.Successful ? "successful" : "unsuccessful");
                 }
             }
