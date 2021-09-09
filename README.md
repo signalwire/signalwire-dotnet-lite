@@ -18,7 +18,7 @@ If you'd like to contribute, feel free to visit our [Slack channel](https://sign
 
 ## Developers
 
-The SDK can be found at the [signalwire-dotnet](https://github.com/signalwire/signalwire-dotnet) repo. To set up the dev environment, follow these steps:
+The SDK can be found at the [signalwire-dotnet](https://github.com/signalwire/signalwire-dotnet-lite) repo. To set up the dev environment, follow these steps:
 
 1. Prerequisites: Git and .NET Core SDK
  * Install Git for your system, for Windows install msysgit if not already installed.
