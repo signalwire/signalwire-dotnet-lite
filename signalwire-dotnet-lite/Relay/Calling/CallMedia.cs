@@ -33,6 +33,9 @@ namespace SignalWire.Relay.Calling
 
             [JsonProperty("gender", NullValueHandling = NullValueHandling.Ignore)]
             public string Gender { get; set; }
+
+            [JsonProperty("voice", NullValueHandling = NullValueHandling.Ignore)]
+            public string Voice { get; set; }
         }
 
         public sealed class SilenceParams
