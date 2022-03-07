@@ -895,7 +895,7 @@ namespace SignalWire.Relay.Calling
             return PlayAsync(play, volume: volume);
         }
 
-        public PlayResult PlayTTS(string text, string gender = null, string language = null, double? volume = null)
+        public PlayResult PlayTTS(string text, string gender = null, string language = null, string voice = null, double? volume = null)
         {
             List<CallMedia> play = new List<CallMedia>
             {
@@ -907,13 +907,14 @@ namespace SignalWire.Relay.Calling
                         Text = text,
                         Gender = gender,
                         Language = language,
+                        Voice = voice,
                     }
                 }
             };
             return Play(play, volume: volume);
         }
 
-        public PlayAction PlayTTSAsync(string text, string gender = null, string language = null, double? volume = null)
+        public PlayAction PlayTTSAsync(string text, string gender = null, string language = null, string voice = null, double? volume = null)
         {
             List<CallMedia> play = new List<CallMedia>
             {
@@ -925,6 +926,7 @@ namespace SignalWire.Relay.Calling
                         Text = text,
                         Gender = gender,
                         Language = language,
+                        Voice = voice,
                     }
                 }
             };
@@ -1144,7 +1146,7 @@ namespace SignalWire.Relay.Calling
             return PromptAsync(play, collect, volume: volume);
         }
 
-        public PromptResult PromptTTS(string text, CallCollect collect, string gender = null, string language = null, double? volume = null)
+        public PromptResult PromptTTS(string text, CallCollect collect, string gender = null, string language = null, string voice = null, double? volume = null)
         {
             List<CallMedia> play = new List<CallMedia>
             {
@@ -1156,13 +1158,14 @@ namespace SignalWire.Relay.Calling
                         Text = text,
                         Gender = gender,
                         Language = language,
+                        Voice = voice,
                     }
                 }
             };
             return Prompt(play, collect, volume: volume);
         }
 
-        public PromptAction PromptTTSAsync(string text, CallCollect collect, string gender = null, string language = null, double? volume = null)
+        public PromptAction PromptTTSAsync(string text, CallCollect collect, string gender = null, string language = null, string voice = null, double? volume = null)
         {
             List<CallMedia> play = new List<CallMedia>
             {
@@ -1174,6 +1177,7 @@ namespace SignalWire.Relay.Calling
                         Text = text,
                         Gender = gender,
                         Language = language,
+                        Voice = voice,
                     }
                 }
             };
