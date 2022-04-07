@@ -31,7 +31,7 @@ namespace SignalWire.Relay
             mAPI.OnEvent += OnEvent;
         }
 
-        internal SignalwireAPI API {  get { return mAPI; } }
+        internal SignalwireAPI API { get { return mAPI; } }
 
         internal void Reset()
         {
@@ -169,6 +169,9 @@ namespace SignalWire.Relay
                 case "calling.call.send_digits":
                     OnCallingEvent_SendDigits(client, callingEventParams);
                     break;
+                case "calling.call.refer":
+                    OnCallingEvent_SendDigits(client, callingEventParams);
+                    break;
                 default: break;
             }
         }
@@ -279,7 +282,7 @@ namespace SignalWire.Relay
                         }));
                         break;
                     }
-                    case CallDevice.DeviceType.sip:
+                case CallDevice.DeviceType.sip:
                     {
                         CallDevice.SipParams sipParams = null;
                         try { sipParams = receiveParams.Device.ParametersAs<CallDevice.SipParams>(); }
@@ -477,6 +480,24 @@ namespace SignalWire.Relay
             }
 
             call.SendDigitsStateChangeHandler(callEventParams, sendDigitsParams);
+        }
+
+        private void OnCallingEvent_Refer(Client client, CallingEventParams callEventParams)
+        {
+            CallingEventParams.ReferParams referParams = null;
+            try { referParams = callEventParams.ParametersAs<CallingEventParams.ReferParams>(); }
+            catch (Exception exc)
+            {
+                Log(LogLevel.Warning, exc, "Failed to parse ReferParams");
+                return;
+            }
+            if (!mCalls.TryGetValue(referParams.CallID, out Call call))
+            {
+                Log(LogLevel.Warning, string.Format("Received referParams with unknown CallID: {0}", referParams.CallID));
+                return;
+            }
+
+            call.ReferStateChangeHandler(callEventParams, referParams);
         }
 
         // Utility
