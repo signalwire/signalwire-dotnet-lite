@@ -12,12 +12,15 @@ namespace SignalWire.Relay.Calling
         [JsonProperty("type", Required = Required.Always)]
         public string Type { get; set; } = "sip";
 
-        public sealed class Params
+        [JsonProperty("params", Required = Required.Always)]
+        public CallReferParams Params { get; set; }
+        
+        public sealed class CallReferParams
         {
             [JsonProperty("to", Required = Required.Always)]
             public string To { get; set; }
 
-            [JsonProperty("headers", Required = Required.Always)]
+            [JsonProperty("headers", NullValueHandling = NullValueHandling.Ignore)]
             public string Headers { get; set; }
         }
 

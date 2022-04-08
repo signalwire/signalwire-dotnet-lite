@@ -170,7 +170,7 @@ namespace SignalWire.Relay
                     OnCallingEvent_SendDigits(client, callingEventParams);
                     break;
                 case "calling.call.refer":
-                    OnCallingEvent_SendDigits(client, callingEventParams);
+                    OnCallingEvent_Refer(client, callingEventParams);
                     break;
                 default: break;
             }
@@ -583,6 +583,11 @@ namespace SignalWire.Relay
         public Task<LL_TapResult> LL_TapAsync(LL_TapParams parameters)
         {
             return mAPI.ExecuteAsync<LL_TapParams, LL_TapResult>("calling.tap", parameters);
+        }
+
+        public Task<LL_ReferResult> LL_ReferAsync(LL_ReferParams parameters)
+        {
+            return mAPI.ExecuteAsync<LL_ReferParams, LL_ReferResult>("calling.refer", parameters);
         }
 
         public Task<LL_TapStopResult> LL_TapStopAsync(LL_TapStopParams parameters)

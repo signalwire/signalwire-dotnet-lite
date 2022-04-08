@@ -9,6 +9,26 @@ namespace SignalWire.Relay.Calling
 {
     public sealed class CallingEventParams
     {
+        public sealed class ReferParams
+        {
+            [JsonProperty("node_id", Required = Required.Always)]
+            public string NodeID { get; set; }
+
+            [JsonProperty("call_id", Required = Required.Always)]
+            public string CallID { get; set; }
+
+            [JsonProperty("sip_refer_to", Required = Required.Always)]
+            public string SipReferTo { get; set; }
+
+            [JsonProperty("sip_refer_response_code", NullValueHandling = NullValueHandling.Ignore)]
+            public string SipReferResponseCode { get; set; }
+            [JsonProperty("sip_notify_response_code", NullValueHandling = NullValueHandling.Ignore)]
+            public string SipNotifyResponseCode { get; set; }
+
+            [JsonProperty("state", Required = Required.Always)]
+            public CallReferState State { get; set; }
+        }
+
         public sealed class StateParams
         {
             [JsonProperty("node_id", Required = Required.Always)]
@@ -383,26 +403,7 @@ namespace SignalWire.Relay.Calling
             [JsonProperty("state", Required = Required.Always)]
             public CallSendDigitsState State { get; set; }
         }
-        public sealed class ReferParams
-        {
-            [JsonProperty("node_id", Required = Required.Always)]
-            public string NodeID { get; set; }
-
-            [JsonProperty("call_id", Required = Required.Always)]
-            public string CallID { get; set; }
-
-            [JsonProperty("sip_refer_to", Required = Required.Always)]
-            public string SipReferTo { get; set; }
-
-            [JsonProperty("sip_refer_response_code", NullValueHandling = NullValueHandling.Ignore)]
-            public string SipReferResponseCode { get; set; }
-            [JsonProperty("sip_notify_response_code", NullValueHandling = NullValueHandling.Ignore)]
-            public string SipNotifyResponseCode { get; set; }
-
-            [JsonProperty("state", Required = Required.Always)]
-            public CallReferState State { get; set; }
-        }
-
+       
         [JsonProperty("event_type", Required = Required.Always)]
         public string EventType { get; set; }
 

@@ -64,7 +64,10 @@ namespace SignalWire.Relay.Calling
         public delegate void SendDigitsStateChangeCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.SendDigitsParams sendDigitsParams);
         public delegate void SendDigitsFinishedCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.SendDigitsParams sendDigitsParams);
 
+        public delegate void ReferFinishedCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.ReferParams referParams);
         public delegate void ReferStateFinishedCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.ReferParams referParams);
+        public delegate void ReferStateErrorCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.ReferParams referParams);
+        public delegate void ReferStateCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.ReferParams referParams);
 
         protected readonly ILogger mLogger = null;
 
@@ -132,9 +135,10 @@ namespace SignalWire.Relay.Calling
 
         public event SendDigitsStateChangeCallback OnSendDigitsStateChange;
         public event SendDigitsFinishedCallback OnSendDigitsFinished;
-
-        public event ReferStateFinishedCallback OnReferStateChange;
-
+        public event ReferFinishedCallback OnReferFinished;
+        public event ReferStateFinishedCallback OnReferFinishedStateChange;
+        public event ReferStateErrorCallback OnReferErrorStateChange;
+        public event ReferStateCallback OnReferStateChange;
 
         protected Call(CallingAPI api, string temporaryCallID)
         {
@@ -434,9 +438,14 @@ namespace SignalWire.Relay.Calling
             switch (referParams.State)
             {
                 case CallReferState.finished:
-                    //OnSendDigitsFinished?.Invoke(mAPI, this, eventParams, referParams);
+                    OnReferFinishedStateChange?.Invoke(mAPI, this, eventParams, referParams);
+                    break;
+                case CallReferState.error:
+                    OnReferErrorStateChange?.Invoke(mAPI, this, eventParams, referParams);
                     break;
             }
+
+            OnReferStateChange?.Invoke(mAPI, this, eventParams, referParams);
         }
 
         public DialResult Dial()
@@ -929,7 +938,6 @@ namespace SignalWire.Relay.Calling
             };
             return Play(play, volume: volume);
         }
-
         public PlayAction PlayTTSAsync(string text, string gender = null, string language = null, string voice = null, double? volume = null)
         {
             List<CallMedia> play = new List<CallMedia>
@@ -964,7 +972,6 @@ namespace SignalWire.Relay.Calling
             };
             return Play(play);
         }
-
         public PlayAction PlaySilenceAsync(double duration)
         {
             List<CallMedia> play = new List<CallMedia>
@@ -1232,6 +1239,71 @@ namespace SignalWire.Relay.Calling
                 }
             };
             return PromptAsync(play, collect, volume: volume);
+        }
+
+        public ReferResult Refer(string to)
+        {
+            Log(LogLevel.Information, "Refer()");
+            Console.WriteLine("Refer Shit");
+            return InternalReferAsync(to).Result;
+        }
+
+        private async Task<ReferResult> InternalReferAsync(string to)
+        {
+            Log(LogLevel.Information, "InternalReferAsync() Called");
+
+            ReferResult resultRefer = new ReferResult();
+            TaskCompletionSource<bool> tcsCompletion = new TaskCompletionSource<bool>();
+
+            // Hook callbacks temporarily to catch required events
+            ReferFinishedCallback finishedCallback = (a, c, e, p) =>
+            {
+                resultRefer.Event = new Event(e.EventType, JObject.FromObject(p));
+                resultRefer.Code = "code here";
+                resultRefer.Message = "message here";
+                tcsCompletion.SetResult(true);
+            };
+
+            OnReferFinished += finishedCallback;
+
+            try
+            {
+                Task<LL_ReferResult> taskLLRefer = mAPI.LL_ReferAsync(new LL_ReferParams()
+                {
+                    NodeID = mNodeID,
+                    CallID = mID,
+                    Device = new CallReferDevice()
+                    {
+                        Type = "sip",
+                        Params = new CallReferDevice.CallReferParams()
+                        {
+                            To = to,
+                            Headers = null
+                        }
+                    }
+                });
+
+                // The use of await rethrows exceptions from the task
+                LL_ReferResult resultLLRefer = await taskLLRefer;
+                Log(LogLevel.Information, "InternalReferAsync() Result?!?");
+                if (resultLLRefer.Code == "200")
+                {
+                    Log(LogLevel.Debug, string.Format("Refer for call {1} waiting for completion events", ID));
+
+                    resultRefer.Successful = await tcsCompletion.Task;
+
+                    Log(LogLevel.Debug, string.Format("Refer for call {1}", ID));
+                }
+            }
+            catch (Exception exc)
+            {
+                Log(LogLevel.Error, exc, string.Format("Refer for call {1} exception", ID));
+            }
+
+            // Unhook temporary callbacks
+            //OnTapFinished -= finishedCallback;
+            Log(LogLevel.Information, "InternalReferAsync() Exited");
+            return resultRefer;
         }
 
         public RecordResult Record(CallRecord record)
