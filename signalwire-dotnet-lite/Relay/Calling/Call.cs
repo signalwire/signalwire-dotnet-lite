@@ -1730,8 +1730,7 @@ namespace SignalWire.Relay.Calling
                             }
                             else if (p.Detect.Parameters.Event == "UNKNOWN")
                             {
-                                resultDetect.Type = DetectResultType.Unknown;
-                                tcsCompletion.SetResult(false);
+                                // Intentionally blank
                             }
                             else
                             {
