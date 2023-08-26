@@ -554,6 +554,16 @@ namespace SignalWire.Relay
             return mAPI.ExecuteAsync<LL_RecordParams, LL_RecordResult>("calling.record", parameters);
         }
 
+        public Task<LL_RecordPauseResult> LL_RecordPauseAsync(LL_RecordPauseParams parameters)
+        {
+            return mAPI.ExecuteAsync<LL_RecordPauseParams, LL_RecordPauseResult>("calling.record.pause", parameters);
+        }
+
+        public Task<LL_RecordResumeResult> LL_RecordResumeAsync(LL_RecordResumeParams parameters)
+        {
+            return mAPI.ExecuteAsync<LL_RecordResumeParams, LL_RecordResumeResult>("calling.record.resume", parameters);
+        }
+
         public Task<LL_RecordStopResult> LL_RecordStopAsync(LL_RecordStopParams parameters)
         {
             return mAPI.ExecuteAsync<LL_RecordStopParams, LL_RecordStopResult>("calling.record.stop", parameters);
