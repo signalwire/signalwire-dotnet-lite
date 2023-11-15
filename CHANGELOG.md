@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.4] - 2023-11-15
+### Fixed
+- Security warning for JSON.NET dependency
+
 ## [2.4.3] - 2023-08-07
 ### Fixed
 - Fix WaitForBeep/UNKNOWN target in machine detection
