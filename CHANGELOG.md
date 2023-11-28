@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.5] - 2023-11-27
+### Fixed
+- Missing compat lib
+
 ## [2.4.4] - 2023-11-15
 ### Fixed
 - Security warning for JSON.NET dependency
