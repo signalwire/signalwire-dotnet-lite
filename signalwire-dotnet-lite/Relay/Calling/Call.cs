@@ -64,6 +64,11 @@ namespace SignalWire.Relay.Calling
         public delegate void SendDigitsStateChangeCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.SendDigitsParams sendDigitsParams);
         public delegate void SendDigitsFinishedCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.SendDigitsParams sendDigitsParams);
 
+        public delegate void ReferFinishedCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.ReferParams referParams);
+        public delegate void ReferStateFinishedCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.ReferParams referParams);
+        public delegate void ReferStateErrorCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.ReferParams referParams);
+        public delegate void ReferStateCallback(CallingAPI api, Call call, CallingEventParams eventParams, CallingEventParams.ReferParams referParams);
+
         protected readonly ILogger mLogger = null;
 
         protected readonly CallingAPI mAPI = null;
@@ -130,7 +135,10 @@ namespace SignalWire.Relay.Calling
 
         public event SendDigitsStateChangeCallback OnSendDigitsStateChange;
         public event SendDigitsFinishedCallback OnSendDigitsFinished;
-        
+        public event ReferFinishedCallback OnReferFinished;
+        public event ReferStateFinishedCallback OnReferFinishedStateChange;
+        public event ReferStateErrorCallback OnReferErrorStateChange;
+        public event ReferStateCallback OnReferStateChange;
 
         protected Call(CallingAPI api, string temporaryCallID)
         {
@@ -149,7 +157,7 @@ namespace SignalWire.Relay.Calling
         public CallingAPI API { get { return mAPI; } }
         public string TemporaryID { get { return mTemporaryID; } }
         public string NodeID { get { return mNodeID; } internal set { mNodeID = value; } }
-      
+
         public string ID { get { return mID; } internal set { mID = value; } }
         public CallState State { get { return mState; } internal set { mState = value; } }
         public CallState PreviousState { get { return mPreviousState; } internal set { mPreviousState = value; } }
@@ -421,6 +429,23 @@ namespace SignalWire.Relay.Calling
                     OnSendDigitsFinished?.Invoke(mAPI, this, eventParams, sendDigitsParams);
                     break;
             }
+        }
+
+        internal void ReferStateChangeHandler(CallingEventParams eventParams, CallingEventParams.ReferParams referParams)
+        {
+            OnReferStateChange?.Invoke(mAPI, this, eventParams, referParams);
+
+            switch (referParams.State)
+            {
+                case CallReferState.finished:
+                    OnReferFinishedStateChange?.Invoke(mAPI, this, eventParams, referParams);
+                    break;
+                case CallReferState.error:
+                    OnReferErrorStateChange?.Invoke(mAPI, this, eventParams, referParams);
+                    break;
+            }
+
+            OnReferStateChange?.Invoke(mAPI, this, eventParams, referParams);
         }
 
         public DialResult Dial()
@@ -913,7 +938,6 @@ namespace SignalWire.Relay.Calling
             };
             return Play(play, volume: volume);
         }
-
         public PlayAction PlayTTSAsync(string text, string gender = null, string language = null, string voice = null, double? volume = null)
         {
             List<CallMedia> play = new List<CallMedia>
@@ -948,7 +972,6 @@ namespace SignalWire.Relay.Calling
             };
             return Play(play);
         }
-
         public PlayAction PlaySilenceAsync(double duration)
         {
             List<CallMedia> play = new List<CallMedia>
@@ -1216,6 +1239,71 @@ namespace SignalWire.Relay.Calling
                 }
             };
             return PromptAsync(play, collect, volume: volume);
+        }
+
+        public ReferResult Refer(string to)
+        {
+            Log(LogLevel.Information, "Refer()");
+            Console.WriteLine("Refer Shit");
+            return InternalReferAsync(to).Result;
+        }
+
+        private async Task<ReferResult> InternalReferAsync(string to)
+        {
+            Log(LogLevel.Information, "InternalReferAsync() Called");
+
+            ReferResult resultRefer = new ReferResult();
+            TaskCompletionSource<bool> tcsCompletion = new TaskCompletionSource<bool>();
+
+            // Hook callbacks temporarily to catch required events
+            ReferFinishedCallback finishedCallback = (a, c, e, p) =>
+            {
+                resultRefer.Event = new Event(e.EventType, JObject.FromObject(p));
+                resultRefer.Code = "code here";
+                resultRefer.Message = "message here";
+                tcsCompletion.SetResult(true);
+            };
+
+            OnReferFinished += finishedCallback;
+
+            try
+            {
+                Task<LL_ReferResult> taskLLRefer = mAPI.LL_ReferAsync(new LL_ReferParams()
+                {
+                    NodeID = mNodeID,
+                    CallID = mID,
+                    Device = new CallReferDevice()
+                    {
+                        Type = "sip",
+                        Params = new CallReferDevice.CallReferParams()
+                        {
+                            To = to,
+                            Headers = null
+                        }
+                    }
+                });
+
+                // The use of await rethrows exceptions from the task
+                LL_ReferResult resultLLRefer = await taskLLRefer;
+                Log(LogLevel.Information, "InternalReferAsync() Result?!?");
+                if (resultLLRefer.Code == "200")
+                {
+                    Log(LogLevel.Debug, string.Format("Refer for call {1} waiting for completion events", ID));
+
+                    resultRefer.Successful = await tcsCompletion.Task;
+
+                    Log(LogLevel.Debug, string.Format("Refer for call {1}", ID));
+                }
+            }
+            catch (Exception exc)
+            {
+                Log(LogLevel.Error, exc, string.Format("Refer for call {1} exception", ID));
+            }
+
+            // Unhook temporary callbacks
+            //OnTapFinished -= finishedCallback;
+            Log(LogLevel.Information, "InternalReferAsync() Exited");
+            return resultRefer;
         }
 
         public RecordResult Record(CallRecord record)
@@ -1610,7 +1698,8 @@ namespace SignalWire.Relay.Calling
             }).Result;
         }
 
-        public DetectAction DetectFaxAsync(CallDetect.FaxParams.FaxTone? tone = null) {
+        public DetectAction DetectFaxAsync(CallDetect.FaxParams.FaxTone? tone = null)
+        {
             var payload = new CallDetect()
             {
                 Type = CallDetect.DetectType.fax,
@@ -1823,16 +1912,17 @@ namespace SignalWire.Relay.Calling
                         // Do nothing
                         break;
 
-                    case CallingEventParams.FaxParams.FaxType.finished: {
-                        var settings = p.Fax.ParametersAs<CallingEventParams.FaxParams.FaxSettings.FinishedSettings>();
-                        resultSendFax.Direction = settings.Direction;
-                        resultSendFax.Document = settings.Document;
-                        resultSendFax.Identity = settings.Identity;
-                        resultSendFax.RemoteIdentity = settings.RemoteIdentity;
-                        resultSendFax.Pages = settings.Pages;
-                        tcsCompletion.SetResult(true);
-                        break;
-                    }
+                    case CallingEventParams.FaxParams.FaxType.finished:
+                        {
+                            var settings = p.Fax.ParametersAs<CallingEventParams.FaxParams.FaxSettings.FinishedSettings>();
+                            resultSendFax.Direction = settings.Direction;
+                            resultSendFax.Document = settings.Document;
+                            resultSendFax.Identity = settings.Identity;
+                            resultSendFax.RemoteIdentity = settings.RemoteIdentity;
+                            resultSendFax.Pages = settings.Pages;
+                            tcsCompletion.SetResult(true);
+                            break;
+                        }
                 }
             };
 
@@ -1912,16 +2002,17 @@ namespace SignalWire.Relay.Calling
                         // Do nothing
                         break;
 
-                    case CallingEventParams.FaxParams.FaxType.finished: {
-                        var settings = p.Fax.ParametersAs<CallingEventParams.FaxParams.FaxSettings.FinishedSettings>();
-                        resultReceiveFax.Direction = settings.Direction;
-                        resultReceiveFax.Document = settings.Document;
-                        resultReceiveFax.Identity = settings.Identity;
-                        resultReceiveFax.RemoteIdentity = settings.RemoteIdentity;
-                        resultReceiveFax.Pages = settings.Pages;
-                        tcsCompletion.SetResult(true);
-                        break;
-                    }
+                    case CallingEventParams.FaxParams.FaxType.finished:
+                        {
+                            var settings = p.Fax.ParametersAs<CallingEventParams.FaxParams.FaxSettings.FinishedSettings>();
+                            resultReceiveFax.Direction = settings.Direction;
+                            resultReceiveFax.Document = settings.Document;
+                            resultReceiveFax.Identity = settings.Identity;
+                            resultReceiveFax.RemoteIdentity = settings.RemoteIdentity;
+                            resultReceiveFax.Pages = settings.Pages;
+                            tcsCompletion.SetResult(true);
+                            break;
+                        }
                 }
             };
 
@@ -2059,7 +2150,7 @@ namespace SignalWire.Relay.Calling
         }
     }
 
-public sealed class SipCall : Call
+    public sealed class SipCall : Call
     {
         public string To { get; set; }
         public string From { get; set; }
@@ -2072,7 +2163,7 @@ public sealed class SipCall : Call
         internal SipCall(CallingAPI api, string nodeID, string callID)
             : base(api, nodeID, callID) { }
         internal SipCall(CallingAPI api, string temporaryCallID)
-            : base (api, temporaryCallID) { }
+            : base(api, temporaryCallID) { }
 
         public override string Type => "sip";
 
@@ -2110,7 +2201,7 @@ public sealed class SipCall : Call
         internal PhoneCall(CallingAPI api, string nodeID, string callID)
             : base(api, nodeID, callID) { }
         internal PhoneCall(CallingAPI api, string temporaryCallID)
-            : base (api, temporaryCallID) { }
+            : base(api, temporaryCallID) { }
 
         public override string Type => "phone";
 
