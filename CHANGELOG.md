@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.6] - 2024-03-04
+### Fixed
+- Updated dependencies for security vulnerabilities
+
 ## [2.4.5] - 2023-11-27
 ### Fixed
 - Missing compat lib
